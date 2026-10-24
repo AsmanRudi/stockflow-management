@@ -1,0 +1,24 @@
+{
+  "name": "stockflow-management",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@stockflow/web",
+    "dev:api": "npm run dev --workspace=@stockflow/api",
+    "build": "npm run build --workspace=@stockflow/web && npm run build --workspace=@stockflow/api",
+    "typecheck": "npm run check --workspace=@stockflow/api",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "test": "npm run test --workspace=@stockflow/api",
+    "postinstall": "prisma generate"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3"
+  }
+}

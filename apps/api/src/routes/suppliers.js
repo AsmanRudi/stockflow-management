@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { prisma } from '../lib/prisma.js';
+const router = Router();
+const schema = z.object({ name: z.string().trim().min(1).max(150), email: z.union([z.string().email().max(254), z.literal(''), z.null()]).optional(), phone: z.string().trim().max(40).optional().nullable(), address: z.string().trim().max(500).optional().nullable() });
+router.get('/', async (_req, res, next) => { try { const data = await prisma.supplier.findMany({ include: { _count: { select: { products: true } } }, orderBy: { name: 'asc' } }); res.json({ success: true, data }); } catch(e) { next(e); } });
+router.post('/', async (req, res, next) => { try { const p = schema.safeParse(req.body); if (!p.success) return res.status(400).json({ success: false, message: 'Data pemasok tidak valid.', errors: p.error.flatten() }); const data = await prisma.supplier.create({ data: { name: p.data.name, email: p.data.email || null, phone: p.data.phone || null, address: p.data.address || null } }); res.status(201).json({ success: true, data }); } catch(e) { next(e); } });
+router.put('/:id', async (req, res, next) => { try { const p = schema.safeParse(req.body); if (!p.success) return res.status(400).json({ success: false, message: 'Data pemasok tidak valid.', errors: p.error.flatten() }); const data = await prisma.supplier.update({ where: { id: req.params.id }, data: { name: p.data.name, email: p.data.email || null, phone: p.data.phone || null, address: p.data.address || null } }); res.json({ success: true, data }); } catch(e) { next(e); } });
+router.delete('/:id', async (req, res, next) => { try { await prisma.supplier.delete({ where: { id: req.params.id } }); res.json({ success: true, message: 'Pemasok berhasil dihapus.' }); } catch(e) { next(e); } });
+export default router;
