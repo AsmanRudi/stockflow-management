@@ -15,8 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
-    "test": "npm run test --workspace=@stockflow/api",
-    "postinstall": "prisma generate"
+    "test": "npm run test --workspace=@stockflow/api"
   },
   "devDependencies": {
     "prisma": "6.19.3"
