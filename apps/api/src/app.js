@@ -21,30 +21,55 @@ const allowedOrigins = (process.env.FRONTEND_URL || '')
   .map((value) => value.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
-// Jika sedang development dan FRONTEND_URL belum diset, izinkan localhost secara otomatis
-if (process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0) {
-  allowedOrigins.push('http://localhost:3000', 'http://localhost:5173');
-}
+const productionOrigin = 'https://stockflow-management-six.vercel.app';
 
-// Konfigurasi CORS tunggal yang aman dan rapi
+// Hanya izinkan preview deployment milik project dan team Vercel ini.
+const isTrustedVercelPreview = (origin) => {
+  try {
+    const url = new URL(origin);
+
+    return (
+      url.protocol === 'https:' &&
+      /^stockflow-management-[a-z0-9-]+-rudi-asman-salims-projects\.vercel\.app$/i
+        .test(url.hostname) &&
+      !url.port &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+};
+
 app.use(cors({
   origin(origin, callback) {
-    // Izinkan request tanpa origin (seperti Postman, curl, atau mobile app)
+    // Request server-to-server atau tanpa Origin tetap diperbolehkan.
     if (!origin) return callback(null, true);
 
     const cleanOrigin = origin.replace(/\/$/, '');
-    if (allowedOrigins.includes(cleanOrigin)) {
-      return callback(null, true);
-    }
 
-    console.error('[CORS DEBUG]', {
-      requestOrigin: origin,
-      allowedOrigins
+    const isAllowed =
+      allowedOrigins.includes(cleanOrigin) ||
+      cleanOrigin === productionOrigin ||
+      isTrustedVercelPreview(cleanOrigin) ||
+      (
+        process.env.NODE_ENV !== 'production' &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(cleanOrigin)
+      );
+
+    if (isAllowed) return callback(null, true);
+
+    console.warn('[CORS BLOCKED]', {
+      origin: cleanOrigin,
+      environment: process.env.NODE_ENV,
     });
 
     return callback(new Error('Origin not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 204,
 }));
 
 app.get('/api/health', (_req, res) => res.status(200).json({ success: true, message: 'StockFlow API is running', timestamp: new Date().toISOString() }));
