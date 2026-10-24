@@ -9,7 +9,7 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=@stockflow/web",
     "dev:api": "npm run dev --workspace=@stockflow/api",
-    "build": "npm run build --workspace=@stockflow/web && npm run build --workspace=@stockflow/api",
+    "build": "prisma generate && npm run build --workspace=@stockflow/web && npm run build --workspace=@stockflow/api",
     "typecheck": "npm run check --workspace=@stockflow/api",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

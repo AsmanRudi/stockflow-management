@@ -20,6 +20,13 @@ export function authRequired(req, res, next) {
   }
 }
 export function cookieOptions() {
-  return { httpOnly: true, secure: process.env.COOKIE_SECURE === 'true', sameSite: 'lax', path: '/', maxAge: 12 * 60 * 60 * 1000 };
+  const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  return {
+    httpOnly: true,
+    secure: isProd || process.env.COOKIE_SECURE === 'true',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 12 * 60 * 60 * 1000,
+  };
 }
 export { cookieName };
