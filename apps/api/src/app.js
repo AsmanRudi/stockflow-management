@@ -86,8 +86,12 @@ app.use((error, _req, res, _next) => {
   if (error?.code === 'P2002') return res.status(409).json({ success: false, message: 'Data unik sudah digunakan (misalnya SKU atau email).' });
   if (error?.code === 'P2025') return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' });
   if (error?.code === 'P2034') return res.status(409).json({ success: false, message: 'Konflik transaksi database. Silakan ulangi.' });
+  if (error?.code === 'P2021') return res.status(500).json({ success: false, message: 'Tabel database belum dibuat di PostgreSQL. Silakan jalankan `npx prisma db push`.' });
+  if (error?.name === 'PrismaClientInitializationError') {
+    return res.status(500).json({ success: false, message: `Koneksi database gagal: ${error.message}` });
+  }
   const status = Number.isInteger(error?.status) ? error.status : 500;
-  return res.status(status).json({ success: false, message: status < 500 ? error.message : 'Terjadi kesalahan pada server.' });
+  return res.status(status).json({ success: false, message: error?.message || 'Terjadi kesalahan pada server.' });
 });
 
 export default app;
