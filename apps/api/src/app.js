@@ -8,6 +8,7 @@ import suppliersRouter from './routes/suppliers.js';
 import transactionsRouter from './routes/transactions.js';
 import dashboardRouter from './routes/dashboard.js';
 import { authRequired } from './middleware/auth.js';
+import { prisma } from './lib/prisma.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -72,7 +73,39 @@ app.use(cors({
   optionsSuccessStatus: 204,
 }));
 
-app.get('/api/health', (_req, res) => res.status(200).json({ success: true, message: 'StockFlow API is running', timestamp: new Date().toISOString() }));
+app.get('/api/health', async (_req, res) => {
+  let dbStatus = 'untested';
+  let dbError = null;
+  let userCount = 0;
+  try {
+    userCount = await prisma.user.count();
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = 'error';
+    dbError = {
+      name: err?.name,
+      code: err?.code,
+      message: err?.message,
+    };
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'StockFlow API is running',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      hasJwtSecret: Boolean(process.env.JWT_SECRET),
+      jwtSecretLength: process.env.JWT_SECRET?.length || 0,
+      nodeEnv: process.env.NODE_ENV || 'unspecified',
+    },
+    database: {
+      status: dbStatus,
+      users: userCount,
+      error: dbError,
+    },
+  });
+});
 app.use('/api/auth', authRouter);
 app.use('/api', authRequired);
 app.use('/api/products', productsRouter);
