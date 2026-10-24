@@ -14,7 +14,47 @@ app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(v=>v.trim()).filter(Boolean);
+
+
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((value) => value.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+app.use((req, res, next) => {
+  const requestOrigin = req.get('origin');
+  const requestHost = req.get('host');
+  const forwardedProto = req.get('x-forwarded-proto');
+  const protocol = forwardedProto
+    ? forwardedProto.split(',')[0].trim()
+    : req.protocol;
+
+  const sameOrigin =
+    Boolean(requestOrigin) &&
+    requestOrigin === `${protocol}://${requestHost}`;
+
+  cors({
+    origin(origin, callback) {
+      if (
+        !origin ||
+        sameOrigin ||
+        allowedOrigins.includes(origin.replace(/\/$/, ''))
+      ) {
+        return callback(null, true);
+      }
+
+      console.error('[CORS DEBUG]', {
+        requestOrigin: origin,
+        allowedOrigins
+      });
+
+      return callback(new Error('Origin not allowed by CORS'));
+    },
+    credentials: true
+  })(req, res, next);
+});
+
+
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('Origin not allowed by CORS')); }, credentials: true }));
 app.get('/api/health', (_req,res)=>res.status(200).json({ success:true, message:'StockFlow API is running', timestamp:new Date().toISOString() }));
 app.use('/api/auth', authRouter);
